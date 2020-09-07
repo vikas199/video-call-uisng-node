@@ -1,3 +1,5 @@
+// this is complete frontend portion of the app
+
 //gets the video and audio from the chrome
 
 const socket = io("/")
@@ -15,22 +17,36 @@ let myVideoStream
 navigator.mediaDevices //check for available media devices
   .getUserMedia({
     video: true,
-    audio: false,
+    audio: true,
   })
-  .then((stream) => {
+  .then(stream => {
     myVideoStream = stream
     addVideoStream(myVideo, stream)
 
-    peer.on("call", function (call) {
-      call.answer(stream) // Answer the call with an A/V stream.
+    peer.on("call", (call) => {
+      call.answer(stream)
       const video = document.createElement("video")
-      call.on("stream", function (remoteStream) {
-        addVideoStream(video, remoteStream)
+      call.on("stream", (userVideoStream) => {
+        addVideoStream(video, userVideoStream)
       })
     })
 
     socket.on("user-connected", (userId) => {
       connectToNewUser(userId, stream)
+    })
+
+    let text = $("input")
+
+    $("html").keydown((e) => {
+      if (e.which == 13 && text.val().length !== 0) {
+        socket.emit("message", text.val())
+        text.val("")
+      }
+    })
+
+    socket.on("createMessage", (message) => {
+      // when u get the list of messages from the server and want to show on the chat screen
+      $(".messages").append(`<li class="message"><b>user</b><br />${message}</li>`)
     })
   })
 
@@ -46,6 +62,7 @@ const connectToNewUser = (userId, stream) => {
     addVideoStream(video, userVideoStream)
   })
 }
+
 const addVideoStream = (video, stream) => {
   video.srcObject = stream
   video.addEventListener("loadedmetadata", () => {
@@ -53,3 +70,65 @@ const addVideoStream = (video, stream) => {
   })
   videoGrid.append(video)
 }
+
+const scrollBottom = () => {
+  var d = $(".main__chat_window")
+  d.scrollTop(d.prop("scrollHeight"))
+}
+
+// mute our video
+const muteUnmute = () => {
+  const enabled = myVideoStream.getAudioTracks()[0].enabled
+  if (enabled) {
+    myVideoStream.getAudioTracks()[0].enabled = false
+    setUnmuteButton()
+  } else {
+    setMuteButton()
+    myVideoStream.getAudioTracks()[0].enabled = true
+  }
+}
+
+const setMuteButton = () => {
+  const html = `
+      <i class="fas fa-microphone"></i>
+      <span>Mute</span>
+    `
+  document.querySelector(".main__mute_button").innerHTML = html
+}
+
+const setUnmuteButton = () => {
+  const html = `
+      <i class="unmute fas fa-microphone-slash"></i>
+      <span>Unmute</span>
+    `
+  document.querySelector(".main__mute_button").innerHTML = html
+}
+
+const playStop = () => {
+    let enabled = myVideoStream.getVideoTracks()[0].enabled
+    if(enabled){
+        myVideoStream.getVideoTracks()[0].enabled = false
+        setPlayVideo()
+    } else {
+        myVideoStream.getVideoTracks()[0].enabled = true
+        setStopVideo()
+    }
+}
+
+const setStopVideo = () => {
+    const html = `
+    <i class="fas fa-video"></i>
+    <span>Stop Video</span>
+    `
+    document.querySelector('.main__video_button').innerHTML = html;
+}
+
+const setPlayVideo = () => {
+    const html = `
+    <i class="stop fas fa-video-slash"></i>
+    <span>Stop Video</span>
+    `
+    document.querySelector('.main__video_button').innerHTML = html;
+}
+
+

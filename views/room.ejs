@@ -14,7 +14,6 @@
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
     <script>
         const ROOM_ID = "<%= roomId %>"
-        console.log("<%= roomId %>");
     </script>
 </head>
 <body>
@@ -28,11 +27,11 @@
            </div>
            <div class="main__controls">
                <div class="main__controls__block">
-                   <div class="main__controls__button">
+                   <div onclick="muteUnmute()" class="main__controls__button main__mute_button">
                        <i class="fas fa-microphone"></i>
                        <span>Mute</span>
                    </div>
-                   <div class="main__controls__button">
+                   <div class="main__controls__button main__video_button" onclick="playStop()">
                     <i class="fas fa-video"></i>
                     <span>Stop Video</span>
                 </div>
@@ -63,7 +62,9 @@
                <h6>Chat</h6>
            </div>
            <div class="main__chat_window">
-               <ul class="messages"></ul>
+               <ul class="messages">
+
+               </ul>
            </div>
            <div class="main__message_container">
                <input id="chat_message" type="text" placeholder="Type message here...">
