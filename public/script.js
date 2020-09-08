@@ -2,65 +2,68 @@
 
 //gets the video and audio from the chrome
 
-const socket = io("/")
-const videoGrid = document.getElementById("video-grid")
-const myVideo = document.createElement("video")
-myVideo.muted = true
-
-var peer = new Peer(undefined, {
-  path: "/peerjs",
-  host: "/",
-  port: "3030",
+const socket = io('/')
+const videoGrid = document.getElementById('video-grid')
+const myPeer = new Peer(undefined, {
+//   path: '/peerjs',
+  secure:true,
+  port: '443'
 })
-
-let myVideoStream
-navigator.mediaDevices //check for available media devices
-  .getUserMedia({
-    video: true,
-    audio: true,
-  })
-  .then(stream => {
-    myVideoStream = stream
-    addVideoStream(myVideo, stream)
-
-    peer.on("call", (call) => {
-      call.answer(stream)
-      const video = document.createElement("video")
-      call.on("stream", (userVideoStream) => {
-        addVideoStream(video, userVideoStream)
-      })
-    })
-
-    socket.on("user-connected", (userId) => {
-      connectToNewUser(userId, stream)
-    })
-
-    let text = $("input")
-
-    $("html").keydown((e) => {
-      if (e.which == 13 && text.val().length !== 0) {
-        socket.emit("message", text.val())
-        text.val("")
-      }
-    })
-
-    socket.on("createMessage", (message) => {
-      // when u get the list of messages from the server and want to show on the chat screen
-      $(".messages").append(`<li class="message"><b>user</b><br />${message}</li>`)
+let myVideoStream;
+const myVideo = document.createElement('video')
+myVideo.muted = true;
+const peers = {}
+navigator.mediaDevices.getUserMedia({
+  video: true,
+  audio: true
+}).then(stream => {
+  myVideoStream = stream;
+  addVideoStream(myVideo, stream)
+  myPeer.on('call', call => {
+    call.answer(stream)
+    const video = document.createElement('video')
+    call.on('stream', userVideoStream => {
+      addVideoStream(video, userVideoStream)
     })
   })
 
-peer.on("open", (id) => {
-  socket.emit("join-room", ROOM_ID, id)
+  socket.on('user-connected', userId => {
+    connectToNewUser(userId, stream)
+  })
+  // input value
+  let text = $("input");
+  // when press enter send message
+  $('html').keydown(function (e) {
+    if (e.which == 13 && text.val().length !== 0) {
+      socket.emit('message', text.val());
+      text.val('')
+    }
+  });
+  socket.on("createMessage", message => {
+    $("ul").append(`<li class="message"><b>user</b><br/>${message}</li>`);
+    scrollToBottom()
+  })
 })
 
-const connectToNewUser = (userId, stream) => {
-  // console.log('new user', userId)
-  const call = peer.call(userId, stream)
-  const video = document.getElementById("video")
-  call.on("stream", (userVideoStream) => {
+socket.on('user-disconnected', userId => {
+  if (peers[userId]) peers[userId].close()
+})
+
+myPeer.on('open', id => {
+  socket.emit('join-room', ROOM_ID, id)
+})
+
+function connectToNewUser(userId, stream) {
+  const call = myPeer.call(userId, stream)
+  const video = document.createElement('video')
+  call.on('stream', userVideoStream => {
     addVideoStream(video, userVideoStream)
   })
+  call.on('close', () => {
+    video.remove()
+  })
+
+  peers[userId] = call
 }
 
 const addVideoStream = (video, stream) => {
